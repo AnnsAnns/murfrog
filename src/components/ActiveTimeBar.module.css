@@ -78,7 +78,7 @@
   .activeTimeSeg {
     display: block;
     flex-basis: 0;
-    min-width: 3px;
+    min-width: 0;
     background: var(--state-color, var(--box-color-standard));
 
     /* Idle stretches (nothing running) get a neutral hatch. */
