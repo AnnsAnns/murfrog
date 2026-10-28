@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ComponentProps } from 'react';
@@ -65,5 +65,17 @@ describe('JobRow', () => {
     );
 
     expect(tooltip.mock.calls.length).toBe(renders + 1);
+  });
+
+  it('shows the target branch of a merge-queue job', () => {
+    renderRow({
+      job: {
+        ...job,
+        ref: 'refs/heads/gh-readonly-queue/2026.10-branch/pr-1-abcdef',
+      },
+    });
+
+    expect(screen.getByText('MQ: 2026.10-branch')).toBeInTheDocument();
+    expect(screen.getByText(/Merge Queue \(2026\.10-branch\)/)).toBeInTheDocument();
   });
 });

@@ -24,6 +24,19 @@ export function isMergeQueue(ref: string | undefined): boolean {
   );
 }
 
+/**
+ * Target branch of a GitHub merge-queue ref. The branch name may itself
+ * contain slashes, so everything between `gh-readonly-queue/` and the final
+ * `/pr-...` segment belongs to it.
+ */
+export function mergeQueueBranch(ref: string | undefined): string | undefined {
+  const prefix = 'refs/heads/gh-readonly-queue/';
+  if (!isMergeQueue(ref) || !ref?.startsWith(prefix)) return undefined;
+  const rest = ref.slice(prefix.length);
+  const end = rest.lastIndexOf('/');
+  return end > 0 ? rest.slice(0, end) : undefined;
+}
+
 /** A scheduled nightly run, flagged by the CI via the NIGHTLY env var. */
 export function isNightly(env: Record<string, string> | undefined): boolean {
   return env?.NIGHTLY === '1';
@@ -68,7 +81,10 @@ export function refRepr(job: Pick<Job, 'ref' | 'commit'>): string {
   const ref = job.ref;
   const firstLine = job.commit?.message?.split('\n')[0] ?? '';
   if (ref && ref.startsWith('refs/')) {
-    if (isMergeQueue(ref)) return `${firstLine} - Merge Queue`;
+    if (isMergeQueue(ref)) {
+      const branch = mergeQueueBranch(ref);
+      return `${firstLine} - Merge Queue${branch ? ` (${branch})` : ''}`;
+    }
     return `${ref.split('/').slice(2).join('/')} @ ${firstLine}`;
   }
   return (ref ?? '').substring(0, 15);
@@ -88,8 +104,8 @@ export function jobTitle(job: Pick<Job, 'prinfo' | 'ref' | 'commit'>): string {
 export function jobTitleUrl(job: Pick<Job, 'prinfo' | 'ref' | 'commit'>, repo: string): string {
   if (job.prinfo) return job.prinfo.url ?? `https://github.com/${repo}`;
   if (isMergeQueue(job.ref)) {
-    const target = job.ref?.split('/').slice(3, 4)[0];
-    return `https://github.com/${repo}/queue/${target}`;
+    const target = mergeQueueBranch(job.ref);
+    return target ? `https://github.com/${repo}/queue/${target}` : `https://github.com/${repo}`;
   }
   if (job.ref && job.ref.startsWith('refs/')) {
     return `https://github.com/${repo}/tree/${job.ref.split('/')[2]}`;
@@ -178,14 +194,16 @@ export function jobRefLink(
   }
 
   if (isMergeQueue(job.ref)) {
-    const branch = job.ref?.split('/').slice(3, 4)[0];
-    return {
-      url: `https://github.com/${repo}/queue/${branch}`,
-      label: 'Merge queue',
-      title: `Merge queue for ${branch}`,
-      icon: 'gitMerge',
-      kind: 'merge-queue',
-    };
+    const branch = mergeQueueBranch(job.ref);
+    if (branch) {
+      return {
+        url: `https://github.com/${repo}/queue/${branch}`,
+        label: `${branch}`,
+        title: `Merge queue for ${branch}`,
+        icon: 'gitMerge',
+        kind: 'merge-queue',
+      };
+    }
   }
 
   if (job.ref?.startsWith('refs/heads/')) {

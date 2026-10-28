@@ -10,7 +10,7 @@
 .jobListHead,
 .jobRow {
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr) 115px 115px 150px 156px;
+  grid-template-columns: 168px minmax(0, 1fr) 115px 115px 150px 156px;
   gap: 12px;
   align-items: center;
   padding: 9px 0;
@@ -52,7 +52,7 @@
 
   /* Applied to the ref-link inside a row. */
   .jobRefLink {
-    width: 120px;
+    width: 156px;
     max-width: 100%;
     justify-content: center;
     padding: 4px 9px;

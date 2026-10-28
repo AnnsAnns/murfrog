@@ -13,6 +13,7 @@ import {
   jobRefLink,
   jobStartDate,
   jobTitleUrl,
+  mergeQueueBranch,
   prState,
   refRepr,
   runtimeAverages,
@@ -67,6 +68,20 @@ describe('isMergeQueue', () => {
   });
 });
 
+describe('mergeQueueBranch', () => {
+  it('extracts the target branch, including slashes in its name', () => {
+    expect(mergeQueueBranch('refs/heads/gh-readonly-queue/master/pr-1-abc')).toBe('master');
+    expect(mergeQueueBranch('refs/heads/gh-readonly-queue/release/2024.10/pr-1-abc')).toBe(
+      'release/2024.10',
+    );
+  });
+
+  it('returns undefined for non-merge-queue refs', () => {
+    expect(mergeQueueBranch('refs/heads/master')).toBeUndefined();
+    expect(mergeQueueBranch(undefined)).toBeUndefined();
+  });
+});
+
 describe('isNightly', () => {
   it('detects the NIGHTLY env flag', () => {
     expect(isNightly({ NIGHTLY: '1' })).toBe(true);
@@ -81,9 +96,12 @@ describe('refRepr', () => {
     expect(refRepr(job())).toBe('master @ core: fix the thing');
   });
 
-  it('labels merge-queue jobs', () => {
+  it('labels merge-queue jobs with their target branch', () => {
     expect(refRepr(job({ ref: 'refs/heads/gh-readonly-queue/master/pr-1' }))).toBe(
-      'core: fix the thing - Merge Queue',
+      'core: fix the thing - Merge Queue (master)',
+    );
+    expect(refRepr(job({ ref: 'refs/heads/gh-readonly-queue/release/2024.10/pr-1' }))).toBe(
+      'core: fix the thing - Merge Queue (release/2024.10)',
     );
   });
 });
@@ -99,6 +117,15 @@ describe('jobTitleUrl', () => {
 
   it('links to the tree for a branch ref', () => {
     expect(jobTitleUrl(job(), 'RIOT-OS/RIOT')).toBe('https://github.com/RIOT-OS/RIOT/tree/master');
+  });
+
+  it('links a merge-queue job to its target branch queue', () => {
+    expect(
+      jobTitleUrl(job({ ref: 'refs/heads/gh-readonly-queue/2026.10-branch/pr-1' }), 'R/R'),
+    ).toBe('https://github.com/R/R/queue/2026.10-branch');
+    expect(
+      jobTitleUrl(job({ ref: 'refs/heads/gh-readonly-queue/release/2024.10/pr-1' }), 'R/R'),
+    ).toBe('https://github.com/R/R/queue/release/2024.10');
   });
 });
 
@@ -461,12 +488,25 @@ describe('jobRefLink', () => {
     expect(link?.kind).toBe('pr');
   });
 
-  it('links merge-queue jobs to the merge queue', () => {
-    const link = jobRefLink({ ref: 'refs/heads/gh-readonly-queue/master/pr-1' }, 'RIOT-OS/RIOT');
-    expect(link?.url).toBe('https://github.com/RIOT-OS/RIOT/queue/master');
-    expect(link?.label).toBe('Merge queue');
-    expect(link?.icon).toBe('gitMerge');
-    expect(link?.kind).toBe('merge-queue');
+  it('links merge-queue jobs to their target branch queue', () => {
+    const master = jobRefLink(
+      { ref: 'refs/heads/gh-readonly-queue/master/pr-1' },
+      'RIOT-OS/RIOT',
+    );
+    expect(master?.url).toBe('https://github.com/RIOT-OS/RIOT/queue/master');
+    expect(master?.label).toBe('MQ: master');
+    expect(master?.title).toBe('Merge queue for master');
+    expect(master?.icon).toBe('gitMerge');
+    expect(master?.kind).toBe('merge-queue');
+
+    // Release branches may contain slashes; the full name is the target.
+    const release = jobRefLink(
+      { ref: 'refs/heads/gh-readonly-queue/release/2024.10/pr-2' },
+      'RIOT-OS/RIOT',
+    );
+    expect(release?.url).toBe('https://github.com/RIOT-OS/RIOT/queue/release/2024.10');
+    expect(release?.label).toBe('MQ: release/2024.10');
+    expect(release?.title).toBe('Merge queue for release/2024.10');
   });
 
   it('links branch and tag refs', () => {
