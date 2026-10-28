@@ -494,7 +494,7 @@ describe('jobRefLink', () => {
       'RIOT-OS/RIOT',
     );
     expect(master?.url).toBe('https://github.com/RIOT-OS/RIOT/queue/master');
-    expect(master?.label).toBe('MQ: master');
+    expect(master?.label).toBe('master');
     expect(master?.title).toBe('Merge queue for master');
     expect(master?.icon).toBe('gitMerge');
     expect(master?.kind).toBe('merge-queue');
@@ -505,7 +505,7 @@ describe('jobRefLink', () => {
       'RIOT-OS/RIOT',
     );
     expect(release?.url).toBe('https://github.com/RIOT-OS/RIOT/queue/release/2024.10');
-    expect(release?.label).toBe('MQ: release/2024.10');
+    expect(release?.label).toBe('release/2024.10');
     expect(release?.title).toBe('Merge queue for release/2024.10');
   });
 

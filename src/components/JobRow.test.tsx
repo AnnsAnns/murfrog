@@ -75,7 +75,7 @@ describe('JobRow', () => {
       },
     });
 
-    expect(screen.getByText('MQ: 2026.10-branch')).toBeInTheDocument();
+    expect(screen.getByText('2026.10-branch')).toBeInTheDocument();
     expect(screen.getByText(/Merge Queue \(2026\.10-branch\)/)).toBeInTheDocument();
   });
 });
